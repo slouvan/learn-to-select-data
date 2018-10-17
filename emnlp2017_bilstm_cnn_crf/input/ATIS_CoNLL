@@ -1,0 +1,21 @@
+{
+    'ATIS':                            #Name of the dataset
+        {'columns': {0:'tokens', 1:'atis_BIO'},   #CoNLL format for the input data. Column 1 contains tokens, column 3 contains POS information
+         'label': 'atis_BIO',                     #Which column we like to predict
+         'evaluate': True,                   #Should we evaluate on this task? Set true always for single task setups
+         'commentSymbol': None,
+         'targetTask' : True,
+         'proportion': 0.6,
+         'nb_sentence' : None,
+         'ori': True},
+
+    'CONLL_2003_NER':                            #Name of the dataset
+        {'columns': {0:'tokens', 1:'CONLL_2003_BIO'},   #CoNLL format for the input data. Column 1 contains tokens, column 3 contains POS information
+         'label': 'CONLL_2003_BIO',                     #Which column we like to predict
+         'evaluate': False,                   #Should we evaluate on this task? Set true always for single task setups
+         'commentSymbol': None,
+         'targetTask' : False,
+         'proportion' : 1,
+         'nb_sentence' : None,
+         'ori': True,},              #Lines in the input data starting with this string will be skipped. Can be used to skip comments
+}

@@ -19,7 +19,7 @@ from constants import NEG_ID, POS_ID
 from simpletagger import read_conll_file
 
 from constants import SENTIMENT, POS, POS_BILSTM, PARSING, \
-    SENTIMENT_TRG_DOMAINS, POS_PARSING_TRG_DOMAINS
+    SENTIMENT_TRG_DOMAINS, POS_PARSING_TRG_DOMAINS, SLOT_FILLING, SLOT_FILLING_TRG_DOMAINS
 from bist_parser.bmstparser.src.utils import read_conll
 
 
@@ -84,7 +84,7 @@ class Vocab:
         self.size = len(self.word2id)
 
 
-def get_all_docs(domain_data_pairs, unlabeled=True):
+def get_all_docs(domain_data_pairs, unlabeled=False):
     """
     Return all labeled and undocumented documents of multiple domains.
     :param domain_data_pairs: a list of (domain, (labeled_reviews, labels,
@@ -230,6 +230,9 @@ def task2read_data_func(task):
         return read_tagging_data
     if task == PARSING:
         return read_parsing_data
+    if task == SLOT_FILLING :
+        print("Reading slot filling data")
+        return read_slot_filling_data
     raise ValueError(
         'No data reading function available for task %s.' % task)
 
@@ -376,6 +379,85 @@ def read_tagging_data(dir_path, top_k_unlabeled=2000):
         domain2data[domain][1] = np.array(domain2data[domain][1])
     return domain2data
 
+def read_slot_filling_data(dir_path, top_k_unlabeled=2000, fold=['train'], domain_=SLOT_FILLING_TRG_DOMAINS):
+    """
+    Reads the CoNLL tagging files in the gweb_sancl/pos directory. Outputs the
+    documents as list of lists with tokens and lists of corresponding tags.
+    The domains are reviews, answer, emails, newsblogs, weblogs, wsj and
+    the corresponding files are called gweb-{domain}-{dev|test}.conll in folder
+    gweb_sancl/pos/{domain}
+    :param dir_path: the path to the directory gweb_sancl
+    :param top_k_unlabeled: only use the top k unlabeled examples
+    :return: a dictionary that maps domains to a tuple of (labeled_examples,
+             labels, unlabeled_examples); labeled_examples is a list of
+             sentences where each sentence is a list of tokens; labels
+             is a list of tags for each sentence; unlabeled_examples has the
+             same format as labeled_examples
+    """
+    print("Reading the slot filling data")
+    domains_path = os.path.join(dir_path, 'slot_filling')
+    if not domain_ :
+        assert os.path.exists(domains_path), ('Error: %s does not exist.' %
+                                             domains_path)
+        domains = [d for d in os.listdir(domains_path)]
+        print(domains)
+        assert set(domains) == set(SLOT_FILLING_TRG_DOMAINS)
+        domain2data = {domain: [[], [], None] for domain in domains}
+    else :
+        assert os.path.exists(domains_path), ('Error: %s does not exist.' %
+                                              domains_path)
+        domains = domain_
+        domain2data = {domain: [[], [], None] for domain in domains}
+    #domain2data = {domain: [[], [], None] for domain in domains}
+    for domain in domains:
+        print('Processing %s...' % domain)
+        # file names are slot_filling/{domain}/gweb-{domain}-{dev|test}.conll
+        if fold :
+            splits = fold
+        else :
+            splits = ['train']
+
+        for split in splits:
+            print('Processing %s/%s...' % (domain, split), end='')
+
+            if split == 'unlabeled':
+                file_path = os.path.join(dir_path, 'unlabeled',
+                                         'gweb-%s.unlabeled.txt' % (domain))
+                assert os.path.exists(file_path), ('%s does not exist.' %
+                                                   file_path)
+                unlabeled_data = []
+                print(file_path)
+                with open(file_path,'rb') as f:
+                    for line in f:
+                        line = line.decode('utf-8','ignore').strip().split()
+                        unlabeled_data.append(line)
+                # add the unlabeled reviews at the third position of the tuple
+                print('Read %s number of unlabeled sentences'
+                      % len(unlabeled_data))
+
+                unlabeled_data = unlabeled_data[:top_k_unlabeled]
+                print('Took top {} documents '.format(top_k_unlabeled))
+                domain2data[domain][2] = unlabeled_data
+            else:
+
+                file_path = os.path.join(domains_path, domain,
+                                         '%s-%s.conll' % (domain, split))
+                assert os.path.exists(file_path), ('%s does not exist.' %
+                                                   file_path)
+
+                data = list(read_conll_file(file_path))
+                words = [words for words, tags in data]
+                tags = [tags for words, tags in data]
+                domain2data[domain][0] += words
+                domain2data[domain][1] += tags
+
+            print(' Processed %d sentences.' % len(data))
+        domain2data[domain][1] = np.array(domain2data[domain][1])
+        #for split in splits :
+        #    domain2data[domain][split][1] = np.array(domain2data[domain][split][1])
+    print("RETURN")
+    return domain2data
+
 
 # =============== parsing data functions ======
 
@@ -468,3 +550,14 @@ def read_parsing_evaluation(evaluation_file_path):
         uas = 0.0
         acc = 0.0
     return las, uas, acc
+
+
+def dump_to_conll(train_data, train_labels, file_name) :
+    print("dump {} instances to {}".format(len(train_data), file_name))
+    with open(file_name, "w") as f:
+        for idx, current_train_data in enumerate(train_data) :
+            current_train_label  = train_labels[idx]
+            assert(len(current_train_data) == len(current_train_label))
+            for token_idx, token in enumerate(current_train_data):
+                f.write("{} {}\n".format(token, current_train_label[token_idx]))
+            f.write("\n")

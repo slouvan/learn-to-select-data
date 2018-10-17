@@ -18,8 +18,9 @@ import scipy.spatial.distance
 def jensen_shannon_divergence(repr1, repr2):
     """Calculates Jensen-Shannon divergence (https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence)."""
     avg_repr = 0.5 * (repr1 + repr2)
+    #print("Jensen Shannon divergence {} {}".format(repr1, repr2))
     sim = 1 - 0.5 * (scipy.stats.entropy(repr1, avg_repr) + scipy.stats.entropy(repr2, avg_repr))
-    if np.isinf(sim):
+    if np.isinf(sim) or np.isnan(sim): #TODO check this out
         # the similarity is -inf if no term in the document is in the vocabulary
         return 0
     return sim
@@ -110,6 +111,7 @@ def get_domain_term_dists(term_dist_path, domain2data, vocab, lowercase=True):
              i.e. a numpy array of shape (vocab_size,)
     """
     domain2term_dist = {}
+    '''
     if os.path.exists(term_dist_path):
         print('Loading the term distributions from file...')
         with open(term_dist_path, 'r') as f:
@@ -129,14 +131,18 @@ def get_domain_term_dists(term_dist_path, domain2data, vocab, lowercase=True):
              'are not equal.' % (' '.join(domain2term_dist.keys()),
                                  ' '.join(domain2data.keys())))
         return domain2term_dist
-
+    '''
     if lowercase:
         print('Lower-casing the data for calculating the term distributions...')
 
     # get the term domain counts for the term distributions
     for domain, (examples, _, unlabeled_examples) in domain2data.items():
-        domain2term_dist[domain] = get_term_dist(
-            examples + unlabeled_examples, vocab, lowercase)
+        if unlabeled_examples is not None:
+            domain2term_dist[domain] = get_term_dist(
+                examples + unlabeled_examples, vocab, lowercase)
+        else :
+            domain2term_dist[domain] = get_term_dist(
+                examples, vocab, lowercase)
 
     print('Writing relative frequency distributions to %s...' % term_dist_path)
     with open(term_dist_path, 'w') as f:
@@ -269,6 +275,7 @@ def load_word_vectors(file, vocab_word_vec_file, word2id, vector_size=300,
     :return a dictionary mapping each word to its numpy word vector
     """
     word2vector = {}
+    '''
     if os.path.exists(vocab_word_vec_file):
         print('Loading vocabulary word vectors from %s...' % vocab_word_vec_file)
         with open(vocab_word_vec_file, 'r', encoding='utf-8') as f:
@@ -283,6 +290,7 @@ def load_word_vectors(file, vocab_word_vec_file, word2id, vector_size=300,
                      % (len(vector), vector_size, word))
                 word2vector[word] = vector
         return word2vector
+    '''
 
     print('Reading word vectors from %s...' % file)
     with open(file, 'r', encoding='utf-8') as f:

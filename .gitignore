@@ -114,3 +114,33 @@ ENV/
 # Rope project settings
 .ropeproject
 
+
+amazon-reviews-small/
+
+data/
+
+dry_run_data/
+
+glove\.6B\.100d\.txt
+
+glove\.6B\.200d\.txt
+
+glove\.6B\.300d\.txt
+
+glove\.6B\.50d\.txt
+
+komninos_english_embeddings\.gz
+
+test_dump\.txt
+
+models/
+
+mtl_data/
+
+mtl_result/
+
+small_data/
+
+logs/
+
+\.idea/

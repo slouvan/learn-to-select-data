@@ -12,8 +12,8 @@ from sklearn import svm
 from sklearn.metrics import accuracy_score
 
 import data_utils
-from constants import POS_ID, NEG_ID, SENTIMENT, POS, POS_BILSTM, PARSING,\
-    BAYES_OPT
+from constants import POS_ID, NEG_ID, SENTIMENT, POS, POS_BILSTM, PARSING, SLOT_FILLING,\
+    BAYES_OPT, MTL_DATA
 from simpletagger import StructuredPerceptron
 
 from bist_parser.bmstparser.src import mstlstm
@@ -21,10 +21,12 @@ from bist_parser.bmstparser.src.utils import vocab_conll, write_conll,\
     write_original_conll
 
 from bilstm_tagger.src.simplebilty import SimpleBiltyTagger, load
-
+from emnlp2017_bilstm_cnn_crf.util.construct_param import construct_param, construct_datasets
+from emnlp2017_bilstm_cnn_crf.neuralnets.BiLSTM import *
+import datetime
 NUM_EPOCHS = 50
 PATIENCE = 2
-
+BO_RUN_CNT = 0
 
 def get_data_subsets(feature_vals, feature_weights, train_data, train_labels,
                      task, num_train_examples):
@@ -47,7 +49,7 @@ def get_data_subsets(feature_vals, feature_weights, train_data, train_labels,
     """
     # calculate the scores as the dot product between feature values and weights
     scores = feature_vals.dot(np.transpose(feature_weights))
-
+    print("Weights : {}".format(feature_weights))
     # sort the indices by their scores
     sorted_index_score_pairs = sorted(zip(range(len(scores)), scores),
                                       key=operator.itemgetter(1), reverse=True)
@@ -64,7 +66,7 @@ def get_data_subsets(feature_vals, feature_weights, train_data, train_labels,
         top_neg_indices = [idx for idx in top_indices if train_labels[idx] ==
                            NEG_ID][:int(num_train_examples/2)]
         top_indices = top_pos_indices + top_neg_indices
-    elif task in [POS, POS_BILSTM, PARSING]:
+    elif task in [POS, POS_BILSTM, PARSING, SLOT_FILLING]:
         # for POS tagging and parsing, we don't need a stratified train set
         top_indices = list(top_indices[:num_train_examples])
     else:
@@ -89,12 +91,14 @@ def task2train_and_evaluate_func(task):
         return train_and_evaluate_pos_bilstm
     if task == PARSING:
         return train_and_evaluate_parsing
+    if task == SLOT_FILLING :
+        return train_and_evaluate_slot_filling_MTL
     raise ValueError('Train_and_evaluate is not implemented for %s.' % task)
 
 
 def train_and_evaluate_sentiment(train_data, train_labels, val_data, val_labels,
                                  test_data=None, test_labels=None,
-                                 parser_output_path=None, perl_script_path=None):
+                                 parser_output_path=None, perl_script_path=None,args=None):
     """
     Trains an SVM on the provided training data. Calculates accuracy on the
     validation set and (optionally) on the test set.
@@ -128,7 +132,7 @@ def train_and_evaluate_sentiment(train_data, train_labels, val_data, val_labels,
 
 def train_and_evaluate_pos(train_data, train_labels, val_data, val_labels,
                            test_data=None, test_labels=None,
-                           parser_output_path=None, perl_script_path=None):
+                           parser_output_path=None, perl_script_path=None, args=None):
     """
     Trains the tagger on the provided training data. Calculates accuracy on the
     validation set and (optionally) on the test set.
@@ -162,10 +166,66 @@ def train_and_evaluate_pos(train_data, train_labels, val_data, val_labels,
         print('Test acc: %.5f' % test_accuracy)
     return val_accuracy, test_accuracy
 
+import sys
+def train_and_evaluate_slot_filling_MTL(train_data, train_labels, val_data, val_labels, test_data=None, test_labels=None,
+                           parser_output_path=None, perl_script_path=None, args=None, BO=True) :
+    """
+    Trains the tagger on the provided training data. Calculates accuracy on the
+    validation set and (optionally) on the test set.
+    :param train_data: the training data; a list of lists of shape
+                       (num_examples, sequence_length)
+    :param train_labels: the training labels; a list of lists of tags
+    :param val_data: the validation data; same format as the training data
+    :param val_labels: the validation labels
+    :param test_data: the test data
+    :param test_labels: the test labels
+    :param parser_output_path: only necessary for parsing; is ignored here
+    :param perl_script_path: only necessary for parsing; is ignored here
+    :return: the validation accuracy and (optionally) the test acc; else None
+    """
+    # Output the filtered training data to a file
+    global BO_RUN_CNT
+    now = datetime.datetime.now()
+    print("Train and evaluate for slot filling {}".format(now))
+
+    print("Arguments are : {}".format(args))
+    params = construct_param(args.mtl_target_task)
+    print("Param : {}".format(params))
+
+    # Copy the filtered training data to MTL directory
+    # We do this because we don't want to change Ruder's or UKP's code in reading the data
+    # TODO : What if the aux task > 1
+    data_utils.dump_to_conll(train_data, train_labels, os.path.join(MTL_DATA, args.mtl_aux_task[0], "train.txt.ori"))
+
+    embeddings, mappings, data, datasets = construct_datasets(args.mtl_target_task, args.mtl_aux_task, nb_sentence=args.mtl_nb_sentence)
+    print("Finish constructing the dataset")
+    # How to wrap the MTL code to read filtered data and the target task and then starts the training
+    model = BiLSTM(params)
+
+    #if args.batch_range is not None:
+    #    model.setBatchRangeLength(args.batch_range)
+    model.setMappings(mappings, embeddings)
+    model.setDataset(datasets, data, mainModelName=args.mtl_target_task)
+    model.storeResults(os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "performance.out"))
+    model.predictionSavePath = os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "predictions", "[ModelName]_[Data].conll")
+    model.modelSavePath = os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "models/[ModelName].h5")
+    model_max_dev_score, model_max_test_score = model.fit(epochs=args.mtl_nb_epoch)
+    model.saveParams(os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "param"))
+
+    # Ouput the F-1 score, return it here
+    if BO :
+        now = datetime.datetime.now()
+        print("{} ------- BO run number : {} F1-scores {} {}--------".format(now, BO_RUN_CNT, model_max_dev_score, model_max_test_score))
+        BO_RUN_CNT += 1
+    else :
+        print("F1-scores {} {}".format(model_max_dev_score, model_max_test_score))
+
+    return model_max_dev_score[args.mtl_target_task], model_max_test_score[args.mtl_target_task]
+
 
 def train_and_evaluate_pos_bilstm(train_data, train_labels, val_data, val_labels,
                                   test_data=None, test_labels=None,
-                                  parser_output_path=None, perl_script_path=None):
+                                  parser_output_path=None, perl_script_path=None, args=None):
     """
     Trains the tagger on the provided training data. Calculates accuracy on the
     validation set and (optionally) on the test set.
@@ -218,7 +278,7 @@ def train_and_evaluate_pos_bilstm(train_data, train_labels, val_data, val_labels
 
 def train_and_evaluate_parsing(train_data, train_labels, val_data, val_labels,
                                test_data=None, test_labels=None,
-                               parser_output_path=None, perl_script_path=None):
+                               parser_output_path=None, perl_script_path=None, args = None):
     """
     Trains the parser on the provided training data. Calculates LAS on the
     validation set and (optionally) on the test set.

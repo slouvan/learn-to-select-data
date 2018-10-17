@@ -88,6 +88,7 @@ def get_feature_representations(feature_names, examples, trg_examples, vocab,
                     f_name, examples[i], train_term_dist, vocab.word2id, word2vec)
             else:
                 raise ValueError('%s is not a valid feature name.' % f_name)
+            #print("Feature value is : {}".format(f))
             assert not np.isnan(f), 'Error: Feature %s is nan.' % f_name
             assert not np.isinf(f), 'Error: Feature %s is inf or -inf.' % f_name
             features[i, j] = f

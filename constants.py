@@ -19,15 +19,21 @@ POS = 'pos'
 POS_BILSTM = 'pos_bilstm'
 SENTIMENT = 'sentiment'
 PARSING = 'parsing'
-TASKS = [POS, POS_BILSTM, SENTIMENT, PARSING]
+SLOT_FILLING = 'slot_filling'
+TASKS = [POS, POS_BILSTM, SENTIMENT, PARSING, SLOT_FILLING]
 POS_PARSING_TRG_DOMAINS = ['answers', 'emails', 'newsgroups', 'reviews', 'weblogs', 'wsj']
 SENTIMENT_TRG_DOMAINS = ['books', 'dvd', 'electronics', 'kitchen']
+#SLOT_FILLING_TRG_DOMAINS = ['atis', 'mit_restaurant', 'mit_movie', 'conll', 'ontonotes']
+SLOT_FILLING_TRG_DOMAINS = ['ATIS', 'CONLL_2003_NER', 'OntoNotes_NW']
+
 TASK2TRAIN_EXAMPLES = {
-    POS: 2000, POS_BILSTM: 2000, SENTIMENT: 1600, PARSING: 2000
+    POS: 2000, POS_BILSTM: 2000, SENTIMENT: 1600, PARSING: 2000, SLOT_FILLING : 2000
 }
+
 TASK2DOMAINS = {
     POS: POS_PARSING_TRG_DOMAINS, POS_BILSTM: POS_PARSING_TRG_DOMAINS,
-    SENTIMENT: SENTIMENT_TRG_DOMAINS, PARSING: POS_PARSING_TRG_DOMAINS
+    SENTIMENT: SENTIMENT_TRG_DOMAINS, PARSING: POS_PARSING_TRG_DOMAINS,
+    SLOT_FILLING : SLOT_FILLING_TRG_DOMAINS
 }
 
 # method-related constants
@@ -37,3 +43,5 @@ MOST_SIMILAR_DOMAIN = 'most-similar-domain'
 MOST_SIMILAR_EXAMPLES = 'most-similar-examples'
 ALL_SOURCE_DATA = 'all-source-data'
 BASELINES = [RANDOM, MOST_SIMILAR_DOMAIN, MOST_SIMILAR_EXAMPLES, ALL_SOURCE_DATA]
+MTL_DATA = '/Users/slouvan/sandbox/learn-to-select-data/emnlp2017_bilstm_cnn_crf/data'
+MTL_PKL = '/Users/slouvan/sandbox/learn-to-select-data/emnlp2017_bilstm_cnn_crf/pkl'

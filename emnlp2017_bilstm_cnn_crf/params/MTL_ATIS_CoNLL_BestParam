@@ -1,0 +1,1 @@
+{'classifier': ['CRF'], 'LSTM-Size': [100], 'dropout': (0.35, 0.35), 'charEmbeddings': 'CNN'}
