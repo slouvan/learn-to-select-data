@@ -189,7 +189,7 @@ if __name__ == '__main__':
                              'to use; default: similarity')
     parser.add_argument('--z-norm', action='store_true',
                         help='use z-normalisation')  # important to specify
-    parser.add_argument('--feature-weights-file',
+    parser.add_argument('--feature-weights-file',dest="feature_weights_file",
                         help='a file containing learned feature weights to be'
                              'used for cross-domain experiments')
 
@@ -339,7 +339,7 @@ if __name__ == '__main__':
 
             print("Reading source domain training data, total : {}".format(len(examples)))
             print("Type X_train : {} y_train : {} train_domains : {}".format(type(X_train), type(y_train), type(train_domains)))
-            print("Domains : {}".format(train_domains))
+            #print("Domains : {}".format(train_domains))
         else :
             # Ruder's implementation
             X_train, y_train, train_domains = data_utils.get_all_docs(
@@ -423,9 +423,9 @@ if __name__ == '__main__':
                 task_utils.train_pretrained_weights(
                     feature_values, X_train, y_train, train_domains,
                     num_train_examples, X_val, y_val, X_test, y_test,
-                    trg_domain, args, feature_names, parser_output_path,
-                    perl_script_path)
-
+                    trg_domain, args, feature_names, parser_output_path=None,
+                    perl_script_path=None)
+                exit(2)
             for baseline in args.baselines:
                 break
                 # select the training data dependent on the baseline

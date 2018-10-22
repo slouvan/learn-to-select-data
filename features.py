@@ -71,6 +71,7 @@ def get_feature_representations(feature_names, examples, trg_examples, vocab,
         print('Shape of target word representation:', trg_word_repr.shape)
 
     for i in range(len(examples)):
+        #print("Example {}".format(examples[i]))
         for j, f_name in enumerate(feature_names):
             # check whether feature belongs to similarity-based features,
             # diversity-based features, etc.

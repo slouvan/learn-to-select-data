@@ -144,3 +144,7 @@ small_data/
 logs/
 
 \.idea/
+
+data\.tar\.gz
+
+*.gz

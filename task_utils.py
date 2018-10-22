@@ -167,7 +167,7 @@ def train_and_evaluate_pos(train_data, train_labels, val_data, val_labels,
     return val_accuracy, test_accuracy
 
 import sys
-def train_and_evaluate_slot_filling_MTL(train_data, train_labels, val_data, val_labels, test_data=None, test_labels=None,
+def  train_and_evaluate_slot_filling_MTL(train_data, train_labels, val_data, val_labels, test_data=None, test_labels=None,
                            parser_output_path=None, perl_script_path=None, args=None, BO=True) :
     """
     Trains the tagger on the provided training data. Calculates accuracy on the
@@ -196,14 +196,18 @@ def train_and_evaluate_slot_filling_MTL(train_data, train_labels, val_data, val_
     # We do this because we don't want to change Ruder's or UKP's code in reading the data
     # TODO : What if the aux task > 1
     data_utils.dump_to_conll(train_data, train_labels, os.path.join(MTL_DATA, args.mtl_aux_task[0], "train.txt.ori"))
+    if args.feature_weights_file:
+        data_utils.dump_to_conll(train_data, train_labels,
+                                 os.path.join(MTL_DATA, args.mtl_aux_task[0], "train.txt.ori.filtered."+args.mtl_aux_task[0]))
 
     embeddings, mappings, data, datasets = construct_datasets(args.mtl_target_task, args.mtl_aux_task, nb_sentence=args.mtl_nb_sentence)
     print("Finish constructing the dataset")
     # How to wrap the MTL code to read filtered data and the target task and then starts the training
     model = BiLSTM(params)
+    if args.mtl_batch_range is not None :
+        print("Setting up batch range to {}".format(args.mtl_batch_range))
+        model.setBatchRangeLength(args.mtl_batch_range)
 
-    #if args.batch_range is not None:
-    #    model.setBatchRangeLength(args.batch_range)
     model.setMappings(mappings, embeddings)
     model.setDataset(datasets, data, mainModelName=args.mtl_target_task)
     model.storeResults(os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "performance.out"))
@@ -399,6 +403,12 @@ def train_and_evaluate_parsing(train_data, train_labels, val_data, val_labels,
     return best_dev_las, test_las
 
 
+def load_filtered_src_train_data_by_pretrained_weight(feature_values, X_train, y_train, train_domains,
+                             num_train_examples, X_val, y_val, X_test, y_test,
+                             trg_domain, args, feature_names,
+                             parser_output_path, perl_script_path) :
+
+    pass
 def train_pretrained_weights(feature_values, X_train, y_train, train_domains,
                              num_train_examples, X_val, y_val, X_test, y_test,
                              trg_domain, args, feature_names,
@@ -447,7 +457,7 @@ def train_pretrained_weights(feature_values, X_train, y_train, train_domains,
         val_accuracy, test_accuracy = task2train_and_evaluate_func(args.task)(
             train_subset, labels_subset, X_val, y_val, X_test, y_test,
             parser_output_path=parser_output_path,
-            perl_script_path=perl_script_path)
+            perl_script_path=perl_script_path, args=args)
         dict_key = ('%s-X-domain-%s-%s' % (BAYES_OPT, feat_weights_domain,
                                            feat_weights_feats))
 

@@ -24,7 +24,7 @@ TASKS = [POS, POS_BILSTM, SENTIMENT, PARSING, SLOT_FILLING]
 POS_PARSING_TRG_DOMAINS = ['answers', 'emails', 'newsgroups', 'reviews', 'weblogs', 'wsj']
 SENTIMENT_TRG_DOMAINS = ['books', 'dvd', 'electronics', 'kitchen']
 #SLOT_FILLING_TRG_DOMAINS = ['atis', 'mit_restaurant', 'mit_movie', 'conll', 'ontonotes']
-SLOT_FILLING_TRG_DOMAINS = ['ATIS', 'CONLL_2003_NER', 'OntoNotes_NW']
+SLOT_FILLING_TRG_DOMAINS = ['ATIS', 'CONLL_2003_NER', 'OntoNotes_NW', 'MIT_Restaurant', 'MIT_Movie']
 
 TASK2TRAIN_EXAMPLES = {
     POS: 2000, POS_BILSTM: 2000, SENTIMENT: 1600, PARSING: 2000, SLOT_FILLING : 2000
