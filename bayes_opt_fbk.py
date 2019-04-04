@@ -9,13 +9,13 @@ import argparse
 import logging
 import pickle
 import copy
-
+import pdb
 import numpy as np
 from scipy import stats
 from sklearn.cross_validation import train_test_split
 import sys
 from robo.fmin import bayesian_optimization
-sys.path.insert(0,'emnlp2017_bilstm_cnn_crf')
+sys.path.insert(0,'slot_tagger')
 import task_utils
 import data_utils
 import similarity
@@ -219,13 +219,17 @@ if __name__ == '__main__':
     parser.add_argument("--mtl-target", dest="mtl_target_task", help="Target Task")
     parser.add_argument("--mtl-aux", dest="mtl_aux_task", nargs='+', help="Auxilliary Task")
     parser.add_argument("--mtl-root-result", dest="mtl_root_dir_result", help="Root directory for results", default="results", type=str)
-    parser.add_argument("--mtl-directory-name", dest="mtl_directory_name", help="Directory Name", required=False, type=str)
+    parser.add_argument("--mtl-directory-name", dest="directory_name", help="Directory Name", required=False, type=str)
     parser.add_argument("--mtl-nb-sentence", dest="mtl_nb_sentence", help="Number of training sentence", type=int)
     parser.add_argument("--mtl-batch-range", dest="mtl_batch_range", default=None, type=str)
     parser.add_argument("--mtl-strategy", dest="mtl_strategy", help="Strategy for resource selection", required=False, type=str)
     parser.add_argument("--mtl-ner", dest="mtl_ner", default=0, type=int)
     parser.add_argument("--mtl-ner-name", dest="mtl_ner_name", default=None)
     parser.add_argument("--mtl-epoch",dest="mtl_nb_epoch", help="Number of epoch", default=50, type=int)
+    parser.add_argument("--sample-replacement", dest="replacement", action="store_true")
+    parser.add_argument("--filter-tags", dest="filter_tags", default=None, nargs="+")
+    parser.add_argument("-top-n-source", dest="top_n", default=None, help="Number of Top N Sentence from Source",type=int)
+    parser.add_argument("-pct", "--percent-sentence", default=100.0, dest="percent_sentence",help="Percentage of training sentence used for training e.g. 10, 20 ,30 ", type=float)
 
     '''
     def construct_param(target_task, root_result, directory_name, strategy=None, nb_sentence=None, ner=0, ner_name=None,
@@ -233,7 +237,7 @@ if __name__ == '__main__':
     params = construct_param(target_task, "MTL_LTD_Result", "new_result
     '''
 
-
+    #pdb.set_trace()
     args = parser.parse_args()
     print(sys.path)
     # switch on logging if specified to see the output of LDA training and of
@@ -255,12 +259,12 @@ if __name__ == '__main__':
     perl_script_path = None
 
     # get the task-specific methods and hyper-parameters
-    num_train_examples = TASK2TRAIN_EXAMPLES[args.task]
+    num_train_examples = TASK2TRAIN_EXAMPLES[args.task]  # Jumlah labeled data
     task_trg_domains = TASK2DOMAINS[args.task]
 
     read_data = data_utils.task2read_data_func(args.task)
 
-
+    # BASICALLY this will call our MTL in the end
     train_and_evaluate = task_utils.task2train_and_evaluate_func(args.task)
     objective_function = task2_objective_function(args.task)
 
@@ -288,8 +292,6 @@ if __name__ == '__main__':
     assert set(task_trg_domains) == set(domain2data.keys())
 
     # create the vocabulary or load it if it was already created
-
-
     vocab_path = os.path.join(args.model_dir, 'vocab.txt')
     vocab = data_utils.Vocab(args.max_vocab_size, vocab_path)
     # retrieve all available tokenised sentences
@@ -314,8 +316,7 @@ if __name__ == '__main__':
 
     print('Creating relative term frequency distributions for all domains...')
     term_dist_path = os.path.join(args.model_dir, 'term_dist.txt')
-    domain2term_dist = similarity.get_domain_term_dists(
-        term_dist_path, domain2data, vocab)
+    domain2term_dist = similarity.get_domain_term_dists(term_dist_path, domain2data, vocab)
 
     import time
 
@@ -470,6 +471,7 @@ if __name__ == '__main__':
             print('Upper limits shape:', upper.shape)
 
             print('Running Bayesian Optimization...')
+            print("Bayesian Opt number of iteration : {}".format(args.num_iterations))
             res = bayesian_optimization(objective_function, lower=lower,
                                         upper=upper,
                                         num_iterations=args.num_iterations)

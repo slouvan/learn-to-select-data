@@ -415,14 +415,14 @@ def read_slot_filling_data(dir_path, top_k_unlabeled=2000, fold=['train'], domai
         if fold :
             splits = fold
         else :
-            splits = ['train']
+            splits = ['train','unlabeled']
 
         for split in splits:
             print('Processing %s/%s...' % (domain, split), end='')
 
             if split == 'unlabeled':
                 file_path = os.path.join(dir_path, 'unlabeled',
-                                         'gweb-%s.unlabeled.txt' % (domain))
+                                         '%s-unlabeled.txt' % (domain))
                 assert os.path.exists(file_path), ('%s does not exist.' %
                                                    file_path)
                 unlabeled_data = []

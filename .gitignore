@@ -148,3 +148,7 @@ logs/
 data\.tar\.gz
 
 *.gz
+
+emnlp2017_bilstm_cnn_crf/
+
+slot_tagger/

@@ -21,8 +21,10 @@ from bist_parser.bmstparser.src.utils import vocab_conll, write_conll,\
     write_original_conll
 
 from bilstm_tagger.src.simplebilty import SimpleBiltyTagger, load
-from emnlp2017_bilstm_cnn_crf.util.construct_param import construct_param, construct_datasets
-from emnlp2017_bilstm_cnn_crf.neuralnets.BiLSTM import *
+#from emnlp2017_bilstm_cnn_crf.util.construct_param import construct_param, construct_datasets
+#from emnlp2017_bilstm_cnn_crf.neuralnets.BiLSTM import *
+from slot_tagger.neuralnets.BiLSTM import *
+from slot_tagger.util.construct_param import construct_param, construct_datasets
 import datetime
 NUM_EPOCHS = 50
 PATIENCE = 2
@@ -200,21 +202,24 @@ def  train_and_evaluate_slot_filling_MTL(train_data, train_labels, val_data, val
         data_utils.dump_to_conll(train_data, train_labels,
                                  os.path.join(MTL_DATA, args.mtl_aux_task[0], "train.txt.ori.filtered."+args.mtl_aux_task[0]))
 
-    embeddings, mappings, data, datasets = construct_datasets(args.mtl_target_task, args.mtl_aux_task, nb_sentence=args.mtl_nb_sentence)
+    embeddings, mappings, data, datasets = construct_datasets(args.mtl_target_task, args.mtl_aux_task, nb_sentence=args.mtl_nb_sentence, args=args)
+
     print("Finish constructing the dataset")
     # How to wrap the MTL code to read filtered data and the target task and then starts the training
     model = BiLSTM(params)
+    model.setArgs(args)
     if args.mtl_batch_range is not None :
         print("Setting up batch range to {}".format(args.mtl_batch_range))
         model.setBatchRangeLength(args.mtl_batch_range)
 
+
     model.setMappings(mappings, embeddings)
     model.setDataset(datasets, data, mainModelName=args.mtl_target_task)
-    model.storeResults(os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "performance.out"))
-    model.predictionSavePath = os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "predictions", "[ModelName]_[Data].conll")
-    model.modelSavePath = os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "models/[ModelName].h5")
+    model.storeResults(os.path.join(args.mtl_root_dir_result, args.directory_name, "performance.out"))
+    model.predictionSavePath = os.path.join(args.mtl_root_dir_result, args.directory_name, "predictions", "[ModelName]_[Data].conll")
+    model.modelSavePath = os.path.join(args.mtl_root_dir_result, args.directory_name, "models/[ModelName].h5")
     model_max_dev_score, model_max_test_score = model.fit(epochs=args.mtl_nb_epoch)
-    model.saveParams(os.path.join(args.mtl_root_dir_result, args.mtl_directory_name, "param"))
+    model.saveParams(os.path.join(args.mtl_root_dir_result, args.directory_name, "param"))
 
     # Ouput the F-1 score, return it here
     if BO :

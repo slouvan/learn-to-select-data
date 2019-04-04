@@ -1,6 +1,9 @@
 """
 Constants that are shared across files.
 """
+from pathlib import Path
+
+HOME_DIR = str(Path.home())
 
 NEG_ID = 0  # the negative sentiment id
 POS_ID = 1  # the positive sentiment id
@@ -11,8 +14,9 @@ FEATURE_SETS = ['similarity', 'topic_similarity', 'word_embedding_similarity',
                 'diversity']
 SIMILARITY_FUNCTIONS = ['jensen-shannon', 'renyi', 'cosine', 'euclidean',
                         'variational', 'bhattacharyya']
-DIVERSITY_FEATURES = ['num_word_types', 'type_token_ratio', 'entropy',
-                      'simpsons_index', 'quadratic_entropy', 'renyi_entropy']
+#DIVERSITY_FEATURES = ['num_word_types', 'type_token_ratio', 'entropy',
+#                      'simpsons_index', 'quadratic_entropy', 'renyi_entropy']
+DIVERSITY_FEATURES = ['num_word_types']
 
 # task-related constants
 POS = 'pos'
@@ -43,5 +47,5 @@ MOST_SIMILAR_DOMAIN = 'most-similar-domain'
 MOST_SIMILAR_EXAMPLES = 'most-similar-examples'
 ALL_SOURCE_DATA = 'all-source-data'
 BASELINES = [RANDOM, MOST_SIMILAR_DOMAIN, MOST_SIMILAR_EXAMPLES, ALL_SOURCE_DATA]
-MTL_DATA = '/Users/slouvan/sandbox/learn-to-select-data/emnlp2017_bilstm_cnn_crf/data'
-MTL_PKL = '/Users/slouvan/sandbox/learn-to-select-data/emnlp2017_bilstm_cnn_crf/pkl'
+MTL_DATA = HOME_DIR+'/sandbox/learn-to-select-data/slot_tagger/data'
+MTL_PKL = HOME_DIR+'/sandbox/learn-to-select-data/slot_tagger/pkl'

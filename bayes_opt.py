@@ -15,6 +15,7 @@ from scipy import stats
 from sklearn.cross_validation import train_test_split
 
 from robo.fmin import bayesian_optimization
+sys.path.insert(0,'slot_tagger')
 
 import task_utils
 import data_utils
